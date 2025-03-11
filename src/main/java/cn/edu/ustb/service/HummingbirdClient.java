@@ -1,6 +1,5 @@
-package cn.edu.ustb.client;
+package cn.edu.ustb.service;
 
-import cn.edu.ustb.scheduler.Scheduler;
 import cn.edu.ustb.task.TaskWrapper;
 import cn.edu.ustb.task.impl.Task;
 
