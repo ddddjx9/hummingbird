@@ -2,6 +2,7 @@ package cn.edu.ustb.task;
 
 import cn.edu.ustb.task.impl.Task;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -9,12 +10,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public class TaskWrapper<T> implements Task<T>,Future<T> {
-    private Task<T> task;
-    
+
     private final List<Task<T>> dependencies;
 
     public TaskWrapper(Task<T> task) {
-        this.task = task;
         this.dependencies = task.getDependencies();
     }
 
@@ -39,7 +38,7 @@ public class TaskWrapper<T> implements Task<T>,Future<T> {
     }
 
     @Override
-    public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+    public T get(long timeout, @Nullable TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         return null;
     }
 
