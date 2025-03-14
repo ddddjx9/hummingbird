@@ -2,6 +2,8 @@ package cn.edu.ustb.core;
 
 import cn.edu.ustb.task.impl.Task;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -10,10 +12,18 @@ import java.util.concurrent.CompletableFuture;
 public class HummingbirdClient {
     public static void main(String[] args) {
         Driver driver = new Driver();
-        Scheduler scheduler = new Scheduler(driver.getResourceManager());
 
-        Task<Integer> rootTask = new SampleTask();
-        scheduler.submit(rootTask);
+        Task<Integer> rootTask = new Task<>() {
+            @Override
+            public Integer execute() {
+                return 42;
+            }
+
+            @Override
+            public List<Task<Integer>> getDependencies() {
+                return new ArrayList<>();
+            }
+        };
 
         // 异步获取结果
         CompletableFuture<Integer> future = driver.getResultFuture(rootTask);

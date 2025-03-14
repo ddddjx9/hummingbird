@@ -44,5 +44,11 @@
             <artifactId>logback-classic</artifactId>
             <version>1.5.3</version>
         </dependency>
+    
+      <dependency>
+        <groupId>com.linkedin.dagli</groupId>
+        <artifactId>core</artifactId>
+        <version>15.0.0-beta9</version>
+      </dependency>
     </dependencies>
 </project>

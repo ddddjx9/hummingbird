@@ -17,7 +17,7 @@ public class ResourceManager {
         startHeartbeatCheck(worker);
     }
 
-    // 分配Worker（带超时机制）
+    // 分配Worker
     public Worker allocateWorker(long timeout, TimeUnit unit)
             throws InterruptedException {
         return freeWorkerQueue.poll(timeout, unit);

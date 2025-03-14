@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeoutException;
 
 /**
  * 任务的包装类
@@ -22,8 +24,9 @@ public class TaskWrapper<T> implements Callable<T>, Serializable {
     private T result;
     private final List<TaskWrapper<?>> dependencies = new ArrayList<>();
     private final CountDownLatch dependencyLatch = new CountDownLatch(0);
+    private volatile int retryCount = 0;
 
-    public TaskWrapper(TaskWrapper<?> task) {
+    public TaskWrapper(Task<T> task) {
         this.task = task;
         this.taskId = UUID.randomUUID().toString();
         // 初始化依赖
@@ -65,5 +68,30 @@ public class TaskWrapper<T> implements Callable<T>, Serializable {
 
     public List<TaskWrapper<?>> getDependencies() {
         return dependencies;
+    }
+
+    public String getTaskId() {
+        return taskId;  
+    }
+
+    public TaskStatus getStatus() {
+        return status;
+    }
+
+    public boolean isTimedOut() {
+        return status == TaskStatus.FAILED && result instanceof TimeoutException;
+    }
+
+    public int getRetryCount() {
+        return retryCount;
+    }
+
+    public void incrementRetryCount() {
+        retryCount++;
+    }
+
+    public CompletableFuture<Integer> getResultFuture() {
+        // 异步获取任务执行结果
+        throw new UnsupportedOperationException("Unimplemented method 'getResultFuture'");
     }
 }

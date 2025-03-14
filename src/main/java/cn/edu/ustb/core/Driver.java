@@ -1,8 +1,11 @@
 package cn.edu.ustb.core;
 
-import cn.edu.ustb.service.DagParser;
+import cn.edu.ustb.enums.TaskStatus;
+import cn.edu.ustb.service.DAGExecutor;
 import cn.edu.ustb.task.TaskWrapper;
 import cn.edu.ustb.task.impl.Task;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -14,27 +17,29 @@ import java.util.concurrent.*;
 public class Driver {
     private final Scheduler scheduler;
     private final Map<String, TaskWrapper<?>> taskRegistry = new ConcurrentHashMap<>();
-    private final DagParser dagParser = new DagParser();
-    private final ExecutorService taskMonitor = Executors.newCachedThreadPool();
+    private final DAGExecutor dagExecutor;
+    private final Logger logger = LoggerFactory.getLogger(Driver.class);
 
     public Driver() {
         ResourceManager resourceManager = new ResourceManager();
         this.scheduler = new Scheduler(resourceManager);
-        startHealthMonitor(); // 启动后台监控线程
+        dagExecutor = new DAGExecutor(scheduler);
+        startHealthMonitor();
     }
 
     /**
      * 接收原始任务并生成可执行DAG
+     *
      * @param rootTask 用户提交的根任务
      * @return 任务执行凭证（可用于查询进度）
      */
     public <T> String submit(Task<T> rootTask) {
         // 生成任务ID并构建Wrapper
-        TaskWrapper<T> rootWrapper = new TaskWrapper<>(rootTask);
+        TaskWrapper<T> rootWrapper = new TaskWrapper<T>(rootTask);
         taskRegistry.put(rootWrapper.getTaskId(), rootWrapper);
 
         // 递归拆解依赖
-        List<TaskWrapper<?>> flattenedTasks = dagParser.flattenDependencies(rootWrapper);
+        List<TaskWrapper<?>> flattenedTasks = dagExecutor.flattenDependencies(rootWrapper);
 
         // 注册所有子任务
         flattenedTasks.forEach(task ->
@@ -42,7 +47,7 @@ public class Driver {
         );
 
         // 提交至调度器
-        scheduler.schedule(rootWrapper);
+        scheduler.submit(rootTask);
 
         return rootWrapper.getTaskId();
     }
@@ -75,5 +80,23 @@ public class Driver {
             // 触发全局回滚
             rollbackDependentTasks(failedTask);
         }
+    }
+
+    private void rollbackDependentTasks(TaskWrapper<?> failedTask) {
+        // 获取所有依赖任务
+        List<TaskWrapper<?>> dependencies = failedTask.getDependencies();
+        for (TaskWrapper<?> dep : dependencies) {
+            // 如果依赖任务未完成，则重试
+            if (dep.getStatus() != TaskStatus.SUCCESS) {
+                scheduler.resubmit(dep);
+            }
+        }
+    }
+
+    public CompletableFuture<Integer> getResultFuture(Task<Integer> rootTask) {
+        // 异步获取任务执行结果
+        TaskWrapper<Integer> rootWrapper = new TaskWrapper<Integer>(rootTask);
+        taskRegistry.put(rootWrapper.getTaskId(), rootWrapper);
+        return rootWrapper.getResultFuture();
     }
 }

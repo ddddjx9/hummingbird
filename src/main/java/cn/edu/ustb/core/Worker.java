@@ -49,4 +49,9 @@ public class Worker implements Runnable{
     private void updateHeartbeat() {
         lastHeartbeat = System.currentTimeMillis();
     }
+
+    public String getId() {
+        // 获取worker的id
+        return id;
+    }
 }
