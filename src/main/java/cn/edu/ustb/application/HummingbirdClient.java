@@ -1,5 +1,6 @@
-package cn.edu.ustb.core;
+package cn.edu.ustb.application;
 
+import cn.edu.ustb.core.Driver;
 import cn.edu.ustb.task.impl.Task;
 
 import java.util.ArrayList;
