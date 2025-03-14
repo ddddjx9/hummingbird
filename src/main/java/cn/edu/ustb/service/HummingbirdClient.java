@@ -5,6 +5,9 @@ import cn.edu.ustb.task.impl.Task;
 
 import java.util.List;
 
+/**
+ * 用于用户的自定义任务提交，提交给driver
+ */
 public class HummingbirdClient {
     public static void main(String[] args) {
         Driver driver = new Driver();
