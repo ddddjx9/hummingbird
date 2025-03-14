@@ -1,4 +1,4 @@
-package cn.edu.ustb.core;
+package cn.edu.ustb.component;
 
 import java.util.Map;
 import java.util.concurrent.*;

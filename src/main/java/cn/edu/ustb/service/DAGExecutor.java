@@ -1,9 +1,8 @@
 package cn.edu.ustb.service;
 
-import cn.edu.ustb.core.ResourceManager;
-import cn.edu.ustb.core.Scheduler;
-import cn.edu.ustb.core.Worker;
-import cn.edu.ustb.core.Worker;
+import cn.edu.ustb.component.ResourceManager;
+import cn.edu.ustb.component.Scheduler;
+import cn.edu.ustb.component.Worker;
 import cn.edu.ustb.task.TaskWrapper;
 
 import java.util.ArrayList;

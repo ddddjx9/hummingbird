@@ -1,4 +1,4 @@
-package cn.edu.ustb.core;
+package cn.edu.ustb.component;
 
 import cn.edu.ustb.enums.TaskStatus;
 import cn.edu.ustb.service.DAGExecutor;
