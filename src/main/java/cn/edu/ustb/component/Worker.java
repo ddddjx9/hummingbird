@@ -1,5 +1,6 @@
 package cn.edu.ustb.component;
 
+import cn.edu.ustb.service.ExecutorManager;
 import cn.edu.ustb.task.TaskWrapper;
 
 import java.util.UUID;
@@ -9,15 +10,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * 用于具体执行任务的工作器
  */
-public class Worker implements Runnable{
+public class Worker implements Runnable {
     private final String id;
     private final BlockingQueue<TaskWrapper<?>> taskQueue = new LinkedBlockingQueue<>();
-    private final AtomicInteger freeSlots;
+    private final AtomicInteger freeSlots = new AtomicInteger(3);
     private volatile long lastHeartbeat = System.currentTimeMillis();
 
-    public Worker(int maxSlots) {
+    public Worker() {
         this.id = UUID.randomUUID().toString();
-        this.freeSlots = new AtomicInteger(maxSlots);
     }
 
     @Override
@@ -27,8 +27,10 @@ public class Worker implements Runnable{
                 TaskWrapper<?> task = taskQueue.poll(1, TimeUnit.SECONDS);
                 if (task != null) {
                     freeSlots.decrementAndGet();
-                    Future<?> future = Executors.newSingleThreadExecutor().submit(task);
-                    future.get(); // 阻塞直到任务完成
+                    ExecutorManager executorManager = new ExecutorManager();
+                    Future<?> future = executorManager.submit(task);
+                    // 阻塞直到任务完成
+                    future.get();
                     freeSlots.incrementAndGet();
                     updateHeartbeat();
                 }

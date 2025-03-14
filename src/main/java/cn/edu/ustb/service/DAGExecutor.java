@@ -1,16 +1,10 @@
 package cn.edu.ustb.service;
 
 import cn.edu.ustb.component.ResourceManager;
-import cn.edu.ustb.component.Scheduler;
 import cn.edu.ustb.component.Worker;
 import cn.edu.ustb.task.TaskWrapper;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -19,8 +13,8 @@ public class DAGExecutor {
     private final ResourceManager rm;
     private final ExecutorManager executor = new ExecutorManager();
 
-    public DAGExecutor(Scheduler scheduler) {
-        this.rm = scheduler.getResourceManager();
+    public DAGExecutor() {
+        this.rm = ResourceManager.getInstance();
     }
 
     public void schedule(TaskWrapper<?> task) {
@@ -94,6 +88,16 @@ public class DAGExecutor {
     }
 
     public <T> List<TaskWrapper<?>> flattenDependencies(TaskWrapper<T> rootWrapper) {
-        return null;
+        // 先构建DAG
+        buildDag(rootWrapper);
+        
+        // 从DAG中获取所有任务
+        Set<TaskWrapper<?>> allTasks = new HashSet<>();
+        dag.forEach((task, deps) -> {
+            allTasks.add(task);
+            allTasks.addAll(deps);
+        });
+        
+        return new ArrayList<>(allTasks);
     }
 }

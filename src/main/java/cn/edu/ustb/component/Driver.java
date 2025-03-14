@@ -21,9 +21,8 @@ public class Driver {
     private final Logger logger = LoggerFactory.getLogger(Driver.class);
 
     public Driver() {
-        ResourceManager resourceManager = new ResourceManager();
-        this.scheduler = new Scheduler(resourceManager);
-        dagExecutor = new DAGExecutor(scheduler);
+        this.scheduler = new Scheduler();
+        dagExecutor = new DAGExecutor();
         startHealthMonitor();
     }
 
@@ -47,7 +46,7 @@ public class Driver {
         );
 
         // 提交至调度器
-        scheduler.submit(rootTask);
+        scheduler.submit(flattenedTasks);
 
         return rootWrapper.getTaskId();
     }

@@ -4,12 +4,10 @@ import cn.edu.ustb.enums.TaskStatus;
 import cn.edu.ustb.task.impl.Task;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -22,18 +20,12 @@ public class TaskWrapper<T> implements Callable<T>, Serializable {
     private final String taskId;
     private volatile TaskStatus status = TaskStatus.PENDING;
     private T result;
-    private final List<TaskWrapper<?>> dependencies = new ArrayList<>();
-    private final CountDownLatch dependencyLatch = new CountDownLatch(0);
+    private List<TaskWrapper<?>> dependencies;
     private volatile int retryCount = 0;
 
     public TaskWrapper(Task<T> task) {
         this.task = task;
-        this.taskId = UUID.randomUUID().toString();
-        // 初始化依赖
-        for (Task<?> dep : task.getDependencies()) {
-            dependencies.add(new TaskWrapper<>(dep));
-            dependencyLatch.countDown();
-        }
+        this.taskId = task.getTaskId();
     }
 
     @Override
@@ -41,7 +33,6 @@ public class TaskWrapper<T> implements Callable<T>, Serializable {
         if (status != TaskStatus.PENDING) return null;
 
         status = TaskStatus.WAITING_DEPENDENCIES;
-        dependencyLatch.await(); // 等待依赖完成
 
         status = TaskStatus.RUNNING;
         try {
@@ -59,19 +50,20 @@ public class TaskWrapper<T> implements Callable<T>, Serializable {
         return status.isTerminalState();
     }
 
-    public T get() throws InterruptedException {
-        while (!isDone()) {
-            Thread.sleep(100);
-        }
-        return result;
-    }
-
     public List<TaskWrapper<?>> getDependencies() {
         return dependencies;
     }
 
+    public void setDependencies(List<TaskWrapper<?>> dependencies) {
+        this.dependencies=dependencies;
+    }
+
     public String getTaskId() {
         return taskId;  
+    }
+
+    public Task<T> getTask() {
+        return task;
     }
 
     public TaskStatus getStatus() {

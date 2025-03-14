@@ -9,6 +9,22 @@ import java.util.concurrent.*;
 public class ResourceManager {
     private final Map<String, Worker> workers = new ConcurrentHashMap<>();
     private final BlockingQueue<Worker> freeWorkerQueue = new LinkedBlockingQueue<>();
+    private static volatile ResourceManager instance;
+    
+    // 私有构造函数，防止外部直接创建实例
+    private ResourceManager() {}
+    
+    // 双重检查锁定实现单例
+    public static ResourceManager getInstance() {
+        if (instance == null) {
+            synchronized (ResourceManager.class) {
+                if (instance == null) {
+                    instance = new ResourceManager();
+                }
+            }
+        }
+        return instance;
+    }
 
     // 注册Worker并启动心跳线程
     public void registerWorker(Worker worker) {
