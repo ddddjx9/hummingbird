@@ -1,96 +1,69 @@
 package cn.edu.ustb.task;
 
+import cn.edu.ustb.enums.TaskStatus;
 import cn.edu.ustb.task.impl.Task;
 
-import javax.annotation.Nullable;
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * 任务的包装类
  *
  * @param <T> 执行的任务类型
  */
-public class TaskWrapper<T> implements Task<T>, Future<T> {
+public class TaskWrapper<T> implements Callable<T>, Serializable {
+    private final Task<T> task;
+    private final String taskId;
+    private volatile TaskStatus status = TaskStatus.PENDING;
+    private T result;
+    private final List<TaskWrapper<?>> dependencies = new ArrayList<>();
+    private final CountDownLatch dependencyLatch = new CountDownLatch(0);
 
-    // 任务执行过程中的依赖
-    private final List<Task<T>> dependencies;
-
-    // 初始化任务的包装类
-    public TaskWrapper(Task<T> task) {
-        this.dependencies = task.getDependencies();
+    public TaskWrapper(TaskWrapper<?> task) {
+        this.task = task;
+        this.taskId = UUID.randomUUID().toString();
+        // 初始化依赖
+        for (Task<?> dep : task.getDependencies()) {
+            dependencies.add(new TaskWrapper<>(dep));
+            dependencyLatch.countDown();
+        }
     }
 
-    /**
-     * 返回是否要打断进程的布尔值
-     *
-     * @param mayInterruptIfRunning {@code true} if the thread
-     *                              executing this task should be interrupted (if the thread is
-     *                              known to the implementation); otherwise, in-progress tasks are
-     *                              allowed to complete
-     * @return 返回是否要打断进程的布尔值
-     */
     @Override
-    public boolean cancel(boolean mayInterruptIfRunning) {
-        return mayInterruptIfRunning;
+    public T call() throws Exception {
+        if (status != TaskStatus.PENDING) return null;
+
+        status = TaskStatus.WAITING_DEPENDENCIES;
+        dependencyLatch.await(); // 等待依赖完成
+
+        status = TaskStatus.RUNNING;
+        try {
+            result = task.execute();
+            status = TaskStatus.SUCCESS;
+            return result;
+        } catch (Exception e) {
+            status = TaskStatus.FAILED;
+            throw e;
+        }
     }
 
-
-    /**
-     * 返回任务是否取消
-     * @return 返回任务是否已经取消
-     */
-    @Override
-    public boolean isCancelled() {
-        return false;
-    }
-
-    /**
-     * 返回任务是否已经执行成功
-     * @return 返回任务是否执行成功
-     */
-    @Override
+    // 实现Future接口核心方法
     public boolean isDone() {
-        return false;
+        return status.isTerminalState();
     }
 
-    /**
-     * 返回任务的执行结果
-     * @return 返回任务执行结果
-     */
-    @Override
-    public T get() {
-        return null;
+    public T get() throws InterruptedException {
+        while (!isDone()) {
+            Thread.sleep(100);
+        }
+        return result;
     }
 
-    /**
-     * 返回任务执行结果
-     * @param timeout the maximum time to wait
-     * @param unit the time unit of the timeout argument
-     * @return 返回任务执行结果
-     */
-    @Override
-    public T get(long timeout, @Nullable TimeUnit unit) {
-        return null;
-    }
-
-    /**
-     * 任务执行方法
-     * @return 返回任务执行结果
-     */
-    @Override
-    public T execute() {
-        return null;
-    }
-
-    /**
-     * 获取任务的依赖
-     * @return 返回该任务依赖的上游任务
-     */
-    @Override
-    public List<Task<T>> getDependencies() {
-        // 未实现的获取任务依赖的方法
+    public List<TaskWrapper<?>> getDependencies() {
         return dependencies;
     }
 }

@@ -1,13 +1,13 @@
 package cn.edu.ustb.task.impl;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * 实现任务的接口，用于向客户端提交任务
- * @param <T>
+ * @param <T> 任务运行类型
  */
-public interface Task<T> {
+public interface Task<T> extends Serializable {
     /**
      * 获取任务的依赖
      * @return 依赖
