@@ -14,7 +14,7 @@ public class HummingbirdClient {
     public static void main(String[] args) {
         Driver driver = new Driver();
 
-        Task<Integer> rootTask = new Task<>() {
+        Task<Integer> rootTask = new Task<Integer>() {
             @Override
             public Integer execute() {
                 return 42;
