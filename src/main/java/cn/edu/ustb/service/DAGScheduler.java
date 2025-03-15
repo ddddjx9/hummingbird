@@ -8,12 +8,12 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-public class DAGExecutor {
+public class DAGScheduler {
     private final Map<TaskWrapper<?>, List<TaskWrapper<?>>> dag = new ConcurrentHashMap<>();
     private final ResourceManager rm;
     private final ExecutorManager executor = new ExecutorManager();
 
-    public DAGExecutor() {
+    public DAGScheduler() {
         this.rm = ResourceManager.getInstance();
     }
 

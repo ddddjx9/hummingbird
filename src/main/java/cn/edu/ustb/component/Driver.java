@@ -1,7 +1,7 @@
 package cn.edu.ustb.component;
 
 import cn.edu.ustb.enums.TaskStatus;
-import cn.edu.ustb.service.DAGExecutor;
+import cn.edu.ustb.service.DAGScheduler;
 import cn.edu.ustb.task.TaskWrapper;
 import cn.edu.ustb.task.impl.Task;
 import org.slf4j.Logger;
@@ -17,12 +17,12 @@ import java.util.concurrent.*;
 public class Driver {
     private final Scheduler scheduler;
     private final Map<String, TaskWrapper<?>> taskRegistry = new ConcurrentHashMap<>();
-    private final DAGExecutor dagExecutor;
+    private final DAGScheduler dagScheduler;
     private final Logger logger = LoggerFactory.getLogger(Driver.class);
 
     public Driver() {
         this.scheduler = new Scheduler();
-        dagExecutor = new DAGExecutor();
+        dagScheduler = new DAGScheduler();
         startHealthMonitor();
     }
 
@@ -38,7 +38,7 @@ public class Driver {
         taskRegistry.put(rootWrapper.getTaskId(), rootWrapper);
 
         // 递归拆解依赖
-        List<TaskWrapper<?>> flattenedTasks = dagExecutor.flattenDependencies(rootWrapper);
+        List<TaskWrapper<?>> flattenedTasks = dagScheduler.flattenDependencies(rootWrapper);
 
         // 注册所有子任务
         flattenedTasks.forEach(task ->
@@ -46,7 +46,7 @@ public class Driver {
         );
 
         // 提交至调度器
-        scheduler.submit(flattenedTasks);
+        scheduler.submit(null);
 
         return rootWrapper.getTaskId();
     }
