@@ -5,7 +5,7 @@ import cn.edu.ustb.task.impl.Task;
 import java.util.List;
 
 public class Stage {
-    private String stageName;
+    private final String stageName;
 
     public Stage(String stageName) {
         this.stageName = stageName;
