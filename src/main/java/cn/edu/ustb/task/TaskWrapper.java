@@ -1,6 +1,7 @@
 package cn.edu.ustb.task;
 
 import cn.edu.ustb.enums.TaskStatus;
+import cn.edu.ustb.model.transformation.Transformation;
 import cn.edu.ustb.task.impl.Task;
 
 import java.io.Serializable;
@@ -15,7 +16,7 @@ import java.util.concurrent.TimeoutException;
  *
  * @param <T> 执行的任务类型
  */
-public class TaskWrapper<T> implements Callable<T>, Serializable {
+public class TaskWrapper<T> implements Task<T>, Serializable {
     private final Task<T> task;
     private final String taskId;
     private volatile TaskStatus status = TaskStatus.PENDING;
@@ -58,8 +59,23 @@ public class TaskWrapper<T> implements Callable<T>, Serializable {
         this.dependencies=dependencies;
     }
 
+    @Override
+    public T execute() {
+        return null;
+    }
+
     public String getTaskId() {
         return taskId;  
+    }
+
+    @Override
+    public T executeTransformations(List<Transformation<?>> transformations) {
+        T result = null;
+        for (Transformation<?> transformation : transformations) {
+            // 假设 Transformation 类有一个 apply 方法用于执行算子
+            result = (T) transformation.apply(result);
+        }
+        return result;
     }
 
     public Task<T> getTask() {
