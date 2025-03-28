@@ -15,13 +15,13 @@ import java.util.concurrent.*;
  * 客户端提交任务的进程
  */
 public class Driver {
-    private final Scheduler scheduler;
+    private final TaskScheduler taskScheduler;
     private final Map<String, TaskWrapper<?>> taskRegistry = new ConcurrentHashMap<>();
     private final DAGScheduler dagScheduler;
     private final Logger logger = LoggerFactory.getLogger(Driver.class);
 
     public Driver() {
-        this.scheduler = new Scheduler();
+        this.taskScheduler = new TaskScheduler();
         dagScheduler = new DAGScheduler();
         startHealthMonitor();
     }
@@ -46,7 +46,7 @@ public class Driver {
         );
 
         // 提交至调度器
-        scheduler.submit(null);
+        taskScheduler.submit(null);
 
         return rootWrapper.getTaskId();
     }
@@ -74,7 +74,7 @@ public class Driver {
 
         // 重试逻辑（最多3次）
         if (failedTask.getRetryCount() < 3) {
-            scheduler.resubmit(failedTask);
+            taskScheduler.resubmit(failedTask);
         } else {
             // 触发全局回滚
             rollbackDependentTasks(failedTask);
@@ -87,7 +87,7 @@ public class Driver {
         for (TaskWrapper<?> dep : dependencies) {
             // 如果依赖任务未完成，则重试
             if (dep.getStatus() != TaskStatus.SUCCESS) {
-                scheduler.resubmit(dep);
+                taskScheduler.resubmit(dep);
             }
         }
     }
