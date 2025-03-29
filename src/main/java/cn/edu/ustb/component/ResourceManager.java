@@ -27,10 +27,13 @@ public class ResourceManager {
     }
 
     // 注册Worker并启动心跳线程
+    // 修改Worker注册方法
     public void registerWorker(Worker worker) {
         workers.put(worker.getId(), worker);
         freeWorkerQueue.offer(worker);
-        startHeartbeatCheck(worker);
+
+        // 使用共享调度器替代每个Worker独立线程
+        SharedHealthMonitor.getInstance().register(worker);
     }
 
     // 分配Worker
@@ -49,5 +52,9 @@ public class ResourceManager {
                 scheduler.shutdown();
             }
         }, 10, 10, TimeUnit.SECONDS);
+    }
+
+    public void unregisterWorker(String id) {
+
     }
 }

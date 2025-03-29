@@ -1,20 +1,19 @@
-package cn.edu.ustb.service;
+package cn.edu.ustb.component;
 
-import cn.edu.ustb.component.ResourceManager;
-import cn.edu.ustb.component.Worker;
 import cn.edu.ustb.model.TransformationStack;
 import cn.edu.ustb.model.stage.Stage;
 import cn.edu.ustb.model.transformation.Transformation;
-import cn.edu.ustb.task.TaskWrapper;
+import cn.edu.ustb.component.task.TaskWrapper;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class DAGScheduler {
     private final Map<TaskWrapper<?>, List<TaskWrapper<?>>> dag = new ConcurrentHashMap<>();
     private final ResourceManager rm;
-    private final ExecutorManager executor = new ExecutorManager();
+    private final ExecutorManager executor = ExecutorManager.getInstance();
 
     public DAGScheduler() {
         this.rm = ResourceManager.getInstance();
@@ -39,14 +38,6 @@ public class DAGScheduler {
                 return false;
             }
         }));
-    }
-
-    private void buildDag(TaskWrapper<?> task) {
-        if (dag.containsKey(task)) {
-            return;
-        }
-        dag.put(task, task.getDependencies());
-        task.getDependencies().forEach(this::buildDag);
     }
 
     // 基于Kahn算法的拓扑排序
@@ -90,7 +81,7 @@ public class DAGScheduler {
         return result;
     }
 
-    public <T> List<TaskWrapper<?>> flattenDependencies(TaskWrapper<T> rootWrapper) {
+    private  <T> List<TaskWrapper<?>> flattenDependencies(TaskWrapper<T> rootWrapper) {
         // 先构建DAG
         buildDag(rootWrapper);
         
@@ -104,7 +95,7 @@ public class DAGScheduler {
         return new ArrayList<>(allTasks);
     }
 
-    public static List<Stage> buildStages(Transformation<?> finalTransformation) {
+    private List<Stage> buildStages(Transformation<?> finalTransformation) {
         TransformationStack stack = new TransformationStack();
         Queue<Transformation<?>> queue = new LinkedList<>();
         Set<Transformation<?>> visited = new HashSet<>();
@@ -119,15 +110,30 @@ public class DAGScheduler {
             // 压栈处理当前算子
             stack.pushTransformation(current);
 
-            // 将上游算子加入队列（逆向解析）
+            // 将上游算子加入队列
             for (Transformation<?> parent : current.getInputs()) {
                 queue.add(parent);
             }
         }
 
-        // 返回阶段列表（需反转顺序）
+        // 返回阶段列表
         List<Stage> stages = stack.buildStages();
         Collections.reverse(stages);
         return stages;
+    }
+
+    // 增强依赖解析
+    private void buildDag(TaskWrapper<?> task) {
+        if (dag.containsKey(task)) return;
+
+        // 获取完整依赖链（包括间接依赖）
+        List<TaskWrapper<?>> allDependencies = new ArrayList<>();
+        task.getDependencies().forEach(dep -> {
+            allDependencies.add(dep);
+            buildDag(dep); // 递归构建
+            allDependencies.addAll(dag.get(dep)); // 添加间接依赖
+        });
+
+        dag.put(task, allDependencies.stream().distinct().collect(Collectors.toList()));
     }
 }

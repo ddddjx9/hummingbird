@@ -1,7 +1,6 @@
 package cn.edu.ustb.component;
 
-import cn.edu.ustb.service.ExecutorManager;
-import cn.edu.ustb.task.TaskWrapper;
+import cn.edu.ustb.component.task.TaskWrapper;
 
 import java.util.UUID;
 import java.util.concurrent.*;

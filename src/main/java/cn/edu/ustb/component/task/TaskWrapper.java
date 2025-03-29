@@ -1,13 +1,12 @@
-package cn.edu.ustb.task;
+package cn.edu.ustb.component.task;
 
+import cn.edu.ustb.component.TaskStateManager;
 import cn.edu.ustb.enums.TaskStatus;
 import cn.edu.ustb.model.transformation.Transformation;
-import cn.edu.ustb.task.impl.Task;
+import cn.edu.ustb.component.task.impl.Task;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
@@ -19,36 +18,20 @@ import java.util.concurrent.TimeoutException;
 public class TaskWrapper<T> implements Task<T>, Serializable {
     private final Task<T> task;
     private final String taskId;
-    private volatile TaskStatus status = TaskStatus.PENDING;
     private T result;
     private List<TaskWrapper<?>> dependencies;
     private volatile int retryCount = 0;
+    private final String stateId;
 
-    public TaskWrapper(Task<T> task) {
+    public TaskWrapper(Task<T> task, String stateId) {
         this.task = task;
         this.taskId = task.getTaskId();
+        this.stateId = stateId;
     }
 
     @Override
     public T call() throws Exception {
-        if (status != TaskStatus.PENDING) return null;
-
-        status = TaskStatus.WAITING_DEPENDENCIES;
-
-        status = TaskStatus.RUNNING;
-        try {
-            result = task.execute();
-            status = TaskStatus.SUCCESS;
-            return result;
-        } catch (Exception e) {
-            status = TaskStatus.FAILED;
-            throw e;
-        }
-    }
-
-    // 实现Future接口核心方法
-    public boolean isDone() {
-        return status.isTerminalState();
+        return null;
     }
 
     public List<TaskWrapper<?>> getDependencies() {
@@ -83,11 +66,7 @@ public class TaskWrapper<T> implements Task<T>, Serializable {
     }
 
     public TaskStatus getStatus() {
-        return status;
-    }
-
-    public boolean isTimedOut() {
-        return status == TaskStatus.FAILED && result instanceof TimeoutException;
+        return TaskStateManager.getInstance().getState(stateId).getStatus();
     }
 
     public int getRetryCount() {

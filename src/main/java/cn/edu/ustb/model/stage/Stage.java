@@ -1,6 +1,6 @@
 package cn.edu.ustb.model.stage;
 
-import cn.edu.ustb.task.impl.Task;
+import cn.edu.ustb.component.task.impl.Task;
 
 import java.util.List;
 

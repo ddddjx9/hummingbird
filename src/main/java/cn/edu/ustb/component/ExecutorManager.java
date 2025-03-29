@@ -1,13 +1,20 @@
-package cn.edu.ustb.service;
+package cn.edu.ustb.component;
 
 import java.util.concurrent.*;
 
 public class ExecutorManager {
 
-    private final ExecutorService executor = Executors.newFixedThreadPool(10);
+    private static final ExecutorManager INSTANCE = new ExecutorManager();
 
-    public ExecutorManager() {
+    private final ExecutorService executor = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
 
+    // 私有构造函数，防止外部实例化
+    private ExecutorManager() {
+    }
+
+    // 提供全局访问点
+    public static ExecutorManager getInstance() {
+        return INSTANCE;
     }
 
     public <T> Future<T> submit(Callable<T> task) {

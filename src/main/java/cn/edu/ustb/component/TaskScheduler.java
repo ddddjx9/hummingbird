@@ -1,10 +1,8 @@
 package cn.edu.ustb.component;
 
 import cn.edu.ustb.model.stage.Stage;
-import cn.edu.ustb.service.DAGScheduler;
-import cn.edu.ustb.service.ExecutorManager;
-import cn.edu.ustb.task.TaskWrapper;
-import cn.edu.ustb.task.impl.Task;
+import cn.edu.ustb.component.task.TaskWrapper;
+import cn.edu.ustb.component.task.impl.Task;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,9 +12,8 @@ import java.util.List;
  */
 public class TaskScheduler {
     private final DAGScheduler dagScheduler = new DAGScheduler();
-    private final ExecutorManager executor = new ExecutorManager();
 
-    public TaskScheduler() {
+    protected TaskScheduler(DAGScheduler dagScheduler, ResourceManager rm,ExecutorManager executorManager) {
 
     }
 

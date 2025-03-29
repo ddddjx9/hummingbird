@@ -1,4 +1,4 @@
-package cn.edu.ustb.task.impl;
+package cn.edu.ustb.component.task.impl;
 
 import cn.edu.ustb.model.transformation.Transformation;
 

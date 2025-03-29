@@ -1,9 +1,8 @@
 package cn.edu.ustb.component;
 
 import cn.edu.ustb.enums.TaskStatus;
-import cn.edu.ustb.service.DAGScheduler;
-import cn.edu.ustb.task.TaskWrapper;
-import cn.edu.ustb.task.impl.Task;
+import cn.edu.ustb.component.task.TaskWrapper;
+import cn.edu.ustb.component.task.impl.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,9 +19,9 @@ public class Driver {
     private final DAGScheduler dagScheduler;
     private final Logger logger = LoggerFactory.getLogger(Driver.class);
 
-    public Driver() {
-        this.taskScheduler = new TaskScheduler();
-        dagScheduler = new DAGScheduler();
+    public Driver(TaskScheduler taskScheduler, DAGScheduler dagScheduler) {
+        this.taskScheduler = taskScheduler;
+        this.dagScheduler = dagScheduler;
         startHealthMonitor();
     }
 
