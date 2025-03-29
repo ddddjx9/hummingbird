@@ -6,8 +6,4 @@ public enum TaskStatus {
     RUNNING,
     SUCCESS,
     FAILED;
-
-    public boolean isTerminalState() {
-        return this == SUCCESS || this == FAILED;
-    }
 }

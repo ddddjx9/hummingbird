@@ -1,14 +1,13 @@
 package cn.edu.ustb.application;
 
-import cn.edu.ustb.component.DefaultSchedulerFactory;
-import cn.edu.ustb.component.Driver;
-import cn.edu.ustb.component.ResourceManager;
-import cn.edu.ustb.component.TaskScheduler;
-import cn.edu.ustb.model.transformation.Transformation;
-import cn.edu.ustb.component.DAGScheduler;
-import cn.edu.ustb.component.task.impl.Task;
+import cn.edu.ustb.core.driver.Driver;
+import cn.edu.ustb.core.dag.DAGScheduler;
+import cn.edu.ustb.core.resourceManager.ResourceManager;
+import cn.edu.ustb.core.task.TaskWrapper;
+import cn.edu.ustb.core.task.impl.Task;
+import cn.edu.ustb.core.task.service.DefaultSchedulerFactory;
+import cn.edu.ustb.core.task.service.TaskScheduler;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -31,16 +30,12 @@ public class HummingbirdClient {
             public Integer execute() {
                 return 42;
             }
-
-            @Override
-            public Integer executeTransformations(List<Transformation<?>> transformations) {
-                return 0;
-            }
         };
 
-        driver.submit(rootTask);
+        TaskWrapper<Integer, Integer> rootWrapper = new TaskWrapper<>(rootTask, "111");
+        driver.submit(rootWrapper);
         // 异步获取结果
-        CompletableFuture<Integer> future = driver.getResultFuture(rootTask);
+        CompletableFuture<Integer> future = driver.getResultFuture(rootWrapper);
         future.thenAccept(result ->
                 System.out.println("Final result: " + result));
     }
