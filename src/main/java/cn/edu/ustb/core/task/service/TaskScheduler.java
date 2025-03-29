@@ -1,95 +1,90 @@
 package cn.edu.ustb.core.task.service;
 
-import cn.edu.ustb.core.resourceManager.worker.Worker;
 import cn.edu.ustb.core.dag.DAGScheduler;
-import cn.edu.ustb.core.resourceManager.worker.ExecutorManager;
 import cn.edu.ustb.core.resourceManager.ResourceManager;
-import cn.edu.ustb.core.task.TaskWrapper;
+import cn.edu.ustb.core.resourceManager.worker.ExecutorManager;
+import cn.edu.ustb.core.resourceManager.worker.Worker;
+import cn.edu.ustb.core.task.Task;
 import cn.edu.ustb.enums.TaskStatus;
+import cn.edu.ustb.model.dataset.Dataset;
 import cn.edu.ustb.model.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * 任务的调度器
  */
 public class TaskScheduler {
     private final Logger logger = LoggerFactory.getLogger(TaskScheduler.class);
+    private final DAGScheduler dagScheduler = new DAGScheduler();
+    private final ResourceManager resourceManager = ResourceManager.getInstance();
+    private final ExecutorManager executorManager = ExecutorManager.getInstance();
+    // 维护正在运行的任务
+    private final Map<String, Task<?, ?>> runningTasks = new ConcurrentHashMap<>();
+    // 重试队列
+    private final PriorityBlockingQueue<Task<?, ?>> retryQueue =
+            new PriorityBlockingQueue<>(10, Comparator.comparingInt(Task::getPriority));
 
-    protected TaskScheduler(DAGScheduler dagScheduler, ResourceManager rm, ExecutorManager executorManager) {
+    protected TaskScheduler() {
 
     }
 
     /**
      * 提交任务列表到调度器
-     *
-     * @param stages 要提交的任务列表
      */
-    public void submitStages(List<Stage> stages) {
-        for (Stage stage : stages) {
-            List<TaskWrapper<?,?>> tasks = createTasks(stage);
-            scheduleTasks(tasks);
-        }
-    }
-
-    private List<TaskWrapper<?,?>> createTasks(Stage stage) {
-        List<TaskWrapper<?,?>> tasks = new ArrayList<>();
-        for (int partitionId = 0; partitionId < stage.getNumPartitions(); partitionId++) {
-            TaskWrapper<?,?> task = new TaskWrapper<>(
-                    stage.getStageId(),
-                    partitionId,
-                    stage.getTransformations(), // 传递该阶段的所有算子
-                    stage.getDependencies()
-            );
-            tasks.add(task);
-        }
-        return tasks;
-    }
-
-    private void scheduleTasks(List<TaskWrapper<?,?>> tasks) {
-        for (TaskWrapper<?,?> task : tasks) {
-            Worker worker;
-            try {
-                worker = ResourceManager.getInstance().allocateWorker(6000, TimeUnit.MINUTES);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            worker.submitTask(task);
-        }
+    public <T> void submitStages(Dataset<T> dataset) {
+        List<Stage> orderedStages = dagScheduler.schedule(dataset);
+        orderedStages.forEach(stage -> {
+            List<Task<?, ?>> tasks = createTasks();
+            tasks.forEach(this::scheduleTask);
+        });
     }
 
     /**
-     * 任务失败处理策略
+     * 创建分片任务（动态分片策略）
      */
-    private void handleTaskFailure(TaskWrapper<?,?> failedTask) {
-        // 记录失败日志
-        logger.error("Task {} failed, initiating recovery", failedTask.getTaskId());
-
-        // 重试逻辑
-        if (failedTask.getRetryCount() < 3) {
-            resubmit(failedTask);
-        } else {
-            // 触发全局回滚
-            rollbackDependentTasks(failedTask);
-        }
+    private List<Task<?, ?>> createTasks() {
+        int numPartitions = calculateOptimalPartitions();
+        return IntStream.range(0, numPartitions)
+                .mapToObj(partitionId -> new Task<>(
+                        null, null
+                ))
+                .collect(Collectors.toList());
     }
 
-    private void rollbackDependentTasks(TaskWrapper<?,?> failedTask) {
-        // 获取所有依赖任务
-        List<? extends TaskWrapper<?, ?>> dependencies = failedTask.getDependencies();
-        for (TaskWrapper<?,?> dep : dependencies) {
-            // 如果依赖任务未完成，则重试
-            if (dep.getStatus() != TaskStatus.SUCCESS) {
-                resubmit(dep);
+    /**
+     * 动态计算分片数量（基于数据量和集群资源）
+     */
+    private int calculateOptimalPartitions() {
+        int defaultPartitions = Runtime.getRuntime().availableProcessors() * 2;
+        return Math.max(defaultPartitions, resourceManager.getAvailableWorkers());
+    }
+
+    /**
+     * 提交单个任务到资源管理器
+     */
+    private void scheduleTask(Task<?, ?> task) {
+        executorManager.submit(() -> {
+            try {
+                Worker worker = resourceManager.allocateWorker(1, TimeUnit.MINUTES);
+                if (worker != null) {
+                    worker.submitTask(task);
+                    return true;
+                }
+                return false;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
             }
-        }
-    }
-
-    public void resubmit(TaskWrapper<?,?> task) {
-
+        });
     }
 }

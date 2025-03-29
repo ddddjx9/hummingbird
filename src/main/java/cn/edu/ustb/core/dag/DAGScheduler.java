@@ -1,104 +1,112 @@
 package cn.edu.ustb.core.dag;
 
-import cn.edu.ustb.core.resourceManager.worker.ExecutorManager;
 import cn.edu.ustb.core.resourceManager.ResourceManager;
-import cn.edu.ustb.core.resourceManager.worker.Worker;
+import cn.edu.ustb.core.resourceManager.worker.ExecutorManager;
+import cn.edu.ustb.core.task.Task;
+import cn.edu.ustb.model.dataset.Dataset;
+import cn.edu.ustb.model.function.FilterFunction;
+import cn.edu.ustb.model.function.MapFunction;
 import cn.edu.ustb.model.stage.Stage;
-import cn.edu.ustb.model.transformation.Transformation;
-import cn.edu.ustb.core.task.TaskWrapper;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
 public class DAGScheduler {
-    private final Map<TaskWrapper<?,?>, List<TaskWrapper<?,?>>> dag = new ConcurrentHashMap<>();
-    private final ResourceManager rm;
+    // 维护Stage依赖关系 (父Stage -> 子Stage)
+    private final Map<Stage, List<Stage>> stageDependencies = new ConcurrentHashMap<>();
+    // Stage到Task的映射 (Stage -> 该Stage的所有Task)
+    private final Map<Stage, List<Task<?, ?>>> stageTasks = new ConcurrentHashMap<>();
+    private final ResourceManager rm = ResourceManager.getInstance();
     private final ExecutorManager executor = ExecutorManager.getInstance();
 
-    public DAGScheduler() {
-        this.rm = ResourceManager.getInstance();
+    public <T> List<Stage> schedule(Dataset<T> dataset) {
+        // 解析算子链，构建Stage
+        List<Stage> stages = buildStages(dataset.getOperations());
+
+        // 构建Stage依赖关系
+        buildStageDependencies(stages);
+
+        // 拓扑排序并提交Stage
+        return topologicalSort(stages);
     }
 
-    public void schedule(TaskWrapper<?,?> task) {
-        // 构建DAG
-        buildDag(task);
+    /**
+     * 将算子链划分为Stage（基于宽窄依赖）
+     */
+    private List<Stage> buildStages(List<Function<?, ?>> operations) {
+        List<Stage> stages = new ArrayList<>();
+        int stageIndex = 0;
+        Stage currentStage = new Stage(String.valueOf(stageIndex++));
 
-        // 拓扑排序后提交
-        List<TaskWrapper<?,?>> orderedTasks = topologicalSort();
-        orderedTasks.forEach(t -> executor.submit(() -> {
-            try {
-                Worker worker = rm.allocateWorker(1, TimeUnit.MINUTES);
-                if (worker != null) {
-                    worker.submitTask(t);
-                    return true;
-                }
-                return false;
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return false;
+        for (Function<?, ?> op : operations) {
+            // 检查是否为宽依赖操作
+            if (isWideDependency(op)) {
+                stages.add(currentStage);
+                currentStage = new Stage(String.valueOf(stageIndex++));
             }
-        }));
+            currentStage.addOperation(op);
+        }
+
+        stages.add(currentStage);
+        return stages;
     }
 
-    // 基于Kahn算法的拓扑排序
-    private List<TaskWrapper<?,?>> topologicalSort() {
-        List<TaskWrapper<?,?>> result = new ArrayList<>();
-        Map<TaskWrapper<?,?>, Integer> inDegree = new HashMap<>();
-        Queue<TaskWrapper<?,?>> queue = new LinkedList<>();
+    /**
+     * 判断是否为宽依赖
+     */
+    private boolean isWideDependency(Function<?, ?> operation) {
+        if (operation instanceof FilterFunction) {
+            return "WIDE".equals(((FilterFunction<?, ?>) operation).getOperationName());
+        } else if (operation instanceof MapFunction) {
+            return "WIDE".equals(((MapFunction<?, ?>) operation).getOperationName());
+        }
+        return false;
+    }
 
-        // 计算入度
-        dag.forEach((task, deps) -> {
-            inDegree.putIfAbsent(task, 0);
-            deps.forEach(dep -> inDegree.merge(dep, 1, Integer::sum));
-        });
+    /**
+     * 构建Stage依赖（链式顺序依赖）
+     */
+    private void buildStageDependencies(List<Stage> stages) {
+        for (int i = 0; i < stages.size() - 1; i++) {
+            Stage parent = stages.get(i);
+            Stage child = stages.get(i + 1);
+            stageDependencies.computeIfAbsent(parent, k -> new ArrayList<>()).add(child);
+        }
+    }
 
-        // 将入度为0的节点加入队列
-        inDegree.forEach((task, degree) -> {
-            if (degree == 0) {
-                queue.offer(task);
-            }
+    /**
+     * 拓扑排序Stage
+     */
+    public List<Stage> topologicalSort(List<Stage> stages) {
+        Map<Stage, Integer> inDegree = new HashMap<>();
+        Queue<Stage> queue = new LinkedList<>();
+
+        // 初始化入度
+        stages.forEach(stage -> inDegree.put(stage, 0));
+        stageDependencies.forEach((parent, children) ->
+                children.forEach(child -> inDegree.merge(child, 1, Integer::sum))
+        );
+
+        // 入队入度为0的Stage
+        inDegree.forEach((stage, degree) -> {
+            if (degree == 0) queue.add(stage);
         });
 
         // 执行拓扑排序
+        List<Stage> orderedStages = new ArrayList<>();
         while (!queue.isEmpty()) {
-            TaskWrapper<?,?> task = queue.poll();
-            result.add(task);
+            Stage stage = queue.poll();
+            orderedStages.add(stage);
 
-            // 更新相邻节点的入度
-            dag.get(task).forEach(dep -> {
-                int newDegree = inDegree.get(dep) - 1;
-                inDegree.put(dep, newDegree);
-                if (newDegree == 0) {
-                    queue.offer(dep);
-                }
-            });
+            stageDependencies.getOrDefault(stage, Collections.emptyList())
+                    .forEach(child -> {
+                        int newDegree = inDegree.get(child) - 1;
+                        inDegree.put(child, newDegree);
+                        if (newDegree == 0) queue.add(child);
+                    });
         }
 
-        if (result.size() != dag.size()) {
-            throw new IllegalStateException("DAG contains cycle");
-        }
-
-        return result;
-    }
-
-    private List<Stage> buildStages(Transformation<?,?> finalTransformation) {
-        return null;
-    }
-
-    // 增强依赖解析
-    private void buildDag(TaskWrapper<?,?> task) {
-        if (dag.containsKey(task)) return;
-
-        // 获取完整依赖链
-        List<TaskWrapper<?,?>> allDependencies = new ArrayList<>();
-        task.getDependencies().forEach(dep -> {
-            allDependencies.add(dep);
-            buildDag(dep); // 递归构建
-            allDependencies.addAll(dag.get(dep)); // 添加间接依赖
-        });
-
-        dag.put(task, allDependencies.stream().distinct().collect(Collectors.toList()));
+        return orderedStages;
     }
 }

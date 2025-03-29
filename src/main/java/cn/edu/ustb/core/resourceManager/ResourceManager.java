@@ -59,4 +59,8 @@ public class ResourceManager {
     public void unregisterWorker(String id) {
 
     }
+
+    public int getAvailableWorkers() {
+        return workers.size();
+    }
 }

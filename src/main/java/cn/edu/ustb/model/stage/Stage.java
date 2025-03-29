@@ -1,9 +1,8 @@
 package cn.edu.ustb.model.stage;
 
-import cn.edu.ustb.core.task.TaskWrapper;
-import cn.edu.ustb.model.transformation.Transformation;
-
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 public class Stage {
     private final String stageName;
@@ -13,19 +12,13 @@ public class Stage {
         this.stageName = stageName;
     }
 
-    public String getStageId() {
-        return stageName;
+    private final List<Function<?, ?>> operations = new ArrayList<>();
+
+    public void addOperation(Function<?, ?> operation) {
+        operations.add(operation);
     }
 
-    public <T,R> List<Transformation<T,R>> getTransformations() {
-        return null;
-    }
-
-    public int getNumPartitions() {
-        return 2;
-    }
-
-    public <T,R> List<TaskWrapper<T,R>> getDependencies() {
-        return null;
+    public List<Function<?, ?>> getOperations() {
+        return operations;
     }
 }

@@ -1,7 +1,5 @@
 package cn.edu.ustb.core.dag;
 
-import cn.edu.ustb.core.task.TaskWrapper;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
