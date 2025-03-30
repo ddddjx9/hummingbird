@@ -5,7 +5,6 @@ import cn.edu.ustb.core.resourceManager.ResourceManager;
 import cn.edu.ustb.core.resourceManager.worker.ExecutorManager;
 import cn.edu.ustb.core.resourceManager.worker.Worker;
 import cn.edu.ustb.core.task.Task;
-import cn.edu.ustb.enums.TaskStatus;
 import cn.edu.ustb.model.dataset.Dataset;
 import cn.edu.ustb.model.stage.Stage;
 import org.slf4j.Logger;
