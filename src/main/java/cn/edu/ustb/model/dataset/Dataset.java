@@ -1,51 +1,44 @@
 package cn.edu.ustb.model.dataset;
 
-import cn.edu.ustb.core.task.service.DefaultSchedulerFactory;
-import cn.edu.ustb.core.task.service.TaskScheduler;
-import cn.edu.ustb.model.function.FilterFunction;
-import cn.edu.ustb.model.function.MapFunction;
+import cn.edu.ustb.core.env.ExecutionEnvironment;
+import cn.edu.ustb.core.dag.JobGraph;
+import cn.edu.ustb.model.function.Function;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class Dataset<T> {
-    // 内部维护的算子链
-    private final List<Function<?, ?>> operations = new ArrayList<>();
-    private final ArrayList<T> datas;
+    public final List<Transformation<?, ?>> transformations = new ArrayList<>();
+    final ExecutionEnvironment env;
 
-    public Dataset(ArrayList<T> datas) {
-        this.datas = datas;
+    // 用户入口：从集合创建Dataset
+    public static <T> Dataset<T> fromCollection(ExecutionEnvironment env, List<T> data) {
+        return new Dataset<>(env, new CollectionSourceTransformation<>(data));
     }
 
-    // 每次转换操作生成新Dataset并记录算子链
-    public <R> Dataset<R> map(Function<Dataset<T>, Dataset<R>> mapper) {
-        MapFunction<T, R> mapFunction = (MapFunction<T, R>) mapper;
-        operations.add(mapFunction);
-        return mapper.apply(this);
+    Dataset(ExecutionEnvironment env, Transformation<?, T> source) {
+        this.env = env;
+        this.transformations.add(source);
     }
 
-    public <R> Dataset<R> filter(Function<Dataset<T>, Dataset<R>> filter) {
-        FilterFunction<T, R> filterFunction = (FilterFunction<T, R>) filter;
-        operations.add(filterFunction);
-        return filter.apply(this);
+    // 转换操作
+    public <R> Dataset<R> map(Function<T, R> mapper) {
+        MapTransformation<T, R> mapTrans = new MapTransformation<>("Map", mapper);
+        transformations.add(mapTrans);
+        return new Dataset<>(env, mapTrans);
     }
 
-    // 触发执行入口
+    // 触发执行
     public List<T> collect() {
-        // return plan.execute();
-        DefaultSchedulerFactory defaultSchedulerFactory = new DefaultSchedulerFactory();
-        TaskScheduler taskScheduler = defaultSchedulerFactory.createTaskScheduler();
-        taskScheduler.submitStages(this);
-        return datas;
+        JobGraph jobGraph = env.createJobGraph(this);
+        env.execute(jobGraph);
+        return jobGraph.getResult();
     }
 
-    public void forEach(Consumer<Dataset<T>> action) {
-        this.collect().forEach(System.out::println);
-    }
-
-    public List<Function<?, ?>> getOperations() {
-        return operations;
+    // 添加Filter转换
+    public Dataset<T> filter(Function<T, Boolean> predicate) {
+        FilterTransformation<T> filterTrans = new FilterTransformation<>(predicate);
+        transformations.add(filterTrans);
+        return new Dataset<>(env, filterTrans);
     }
 }

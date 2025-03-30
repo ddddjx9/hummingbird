@@ -1,5 +1,7 @@
 package cn.edu.ustb.core.dag;
 
+import cn.edu.ustb.core.task.Task;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -9,7 +11,7 @@ public class RetryPolicy {
     // 新增熔断机制
     private final CircuitBreaker breaker = new CircuitBreaker();
 
-    public <T, R> boolean shouldRetry(TaskWrapper<T, R> task) {
+    public <T, R> boolean shouldRetry(Task<T, R> task) {
         return breaker.allowRetry(task.getTaskId()) &&
                 task.getRetryCount() < MAX_RETRIES;
     }

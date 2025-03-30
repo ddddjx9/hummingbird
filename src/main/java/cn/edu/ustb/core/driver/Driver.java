@@ -1,37 +1,24 @@
 package cn.edu.ustb.core.driver;
 
-import cn.edu.ustb.core.dag.DAGScheduler;
-import cn.edu.ustb.core.task.service.TaskScheduler;
-
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
+import cn.edu.ustb.model.dataset.Dataset;
 
 /**
  * 客户端提交任务的进程
  */
 public class Driver {
     private final TaskScheduler taskScheduler;
-    private final Map<String, TaskWrapper<?>> taskRegistry = new ConcurrentHashMap<>();
-    private final DAGScheduler dagScheduler;
 
-    public Driver(TaskScheduler taskScheduler, DAGScheduler dagScheduler) {
+    public Driver(TaskScheduler taskScheduler) {
         this.taskScheduler = taskScheduler;
-        this.dagScheduler = dagScheduler;
     }
 
     /**
      * 接收原始任务并生成可执行DAG
      *
-     * @param rootWrapper 用户提交的根任务
+     * @param dataset 用于计算的数据集
      */
-    public <T> void submit(TaskWrapper<T> rootWrapper) {
+    public <T> void submit(Dataset<T> dataset) {
         // 提交至调度器
-        taskScheduler.submit(null);
-    }
-
-    public CompletableFuture<Integer> getResultFuture(TaskWrapper<Integer> rootTask) {
-        // 异步获取任务执行结果
-        return null;
+        taskScheduler.submitStages(dataset);
     }
 }
