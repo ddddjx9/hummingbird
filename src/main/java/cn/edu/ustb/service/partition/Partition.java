@@ -1,4 +1,4 @@
-package cn.edu.ustb.model.partition;
+package cn.edu.ustb.service.partition;
 
 import java.util.List;
 

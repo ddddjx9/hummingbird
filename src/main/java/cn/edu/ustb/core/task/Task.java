@@ -1,7 +1,7 @@
 package cn.edu.ustb.core.task;
 
-import cn.edu.ustb.model.dataset.MapTransformation;
-import cn.edu.ustb.model.dataset.Transformation;
+import cn.edu.ustb.service.transformation.MapTransformation;
+import cn.edu.ustb.service.transformation.Transformation;
 import lombok.Getter;
 
 import java.util.ArrayList;

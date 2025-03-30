@@ -1,6 +1,6 @@
-package cn.edu.ustb.model.partition;
+package cn.edu.ustb.service.partition;
 
-import cn.edu.ustb.model.partition.impl.Partitioner;
+import cn.edu.ustb.service.partition.impl.Partitioner;
 
 public class HashPartitioner<K> implements Partitioner<K> {
     private final int numPartitions = 3;

@@ -1,6 +1,7 @@
-package cn.edu.ustb.model.dataset;
+package cn.edu.ustb.service.transformation;
 
-import cn.edu.ustb.model.function.Function;
+import cn.edu.ustb.service.dataset.Dataset;
+import cn.edu.ustb.service.function.Function;
 
 public class FilterTransformation<T> extends Transformation<T, T> {
     private final Function<T, Boolean> predicate;

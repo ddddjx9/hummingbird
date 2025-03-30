@@ -1,7 +1,7 @@
 package cn.edu.ustb.core.dag;
 
 import cn.edu.ustb.core.task.Task;
-import cn.edu.ustb.model.dataset.Transformation;
+import cn.edu.ustb.service.transformation.Transformation;
 
 import java.util.ArrayList;
 import java.util.HashMap;

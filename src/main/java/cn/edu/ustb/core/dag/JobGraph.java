@@ -1,9 +1,9 @@
 package cn.edu.ustb.core.dag;
 
 import cn.edu.ustb.core.task.Task;
-import cn.edu.ustb.core.task.service.DefaultTaskScheduler;
-import cn.edu.ustb.core.task.service.impl.TaskScheduler;
-import cn.edu.ustb.model.dataset.Transformation;
+import cn.edu.ustb.core.task.scheduler.DefaultTaskScheduler;
+import cn.edu.ustb.core.task.scheduler.impl.TaskScheduler;
+import cn.edu.ustb.service.transformation.Transformation;
 
 import java.util.HashMap;
 import java.util.List;

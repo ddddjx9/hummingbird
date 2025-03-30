@@ -1,4 +1,4 @@
-package cn.edu.ustb.model.function;
+package cn.edu.ustb.service.function;
 
 import java.io.Serializable;
 

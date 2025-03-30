@@ -1,6 +1,5 @@
-package cn.edu.ustb.core.task.service;
+package cn.edu.ustb.core.task.scheduler;
 
-import cn.edu.ustb.core.resourceManager.ResourceManager;
 import cn.edu.ustb.enums.TaskStatus;
 
 import java.util.Map;

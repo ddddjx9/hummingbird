@@ -1,8 +1,8 @@
-package cn.edu.ustb.core.task.service.impl;
+package cn.edu.ustb.core.task.scheduler.impl;
 
 import cn.edu.ustb.core.task.Task;
 
 public interface TaskScheduler {
-    void submit(Task<?, ?> task);
+    <IN,OUT> void submit(Task<IN, OUT> task);
     void shutdown();
 }

@@ -1,4 +1,6 @@
-package cn.edu.ustb.model.dataset;
+package cn.edu.ustb.service.transformation;
+
+import cn.edu.ustb.service.dataset.Dataset;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -16,7 +18,7 @@ public class CollectionSourceTransformation<T> extends Transformation<Void, T> {
         throw new UnsupportedOperationException("Source cannot have input");
     }
 
-    public void runSource(BlockingQueue<?> outputChannel) {
+    public void runSource(BlockingQueue<T> outputChannel) {
         new Thread(() -> {
             for (T item : data) {
                 outputChannel.offer(item);
