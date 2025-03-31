@@ -1,7 +1,7 @@
 package cn.edu.ustb.core.env;
 
-import cn.edu.ustb.core.dag.JobGraph;
-import cn.edu.ustb.core.dag.JobGraphBuilder;
+import cn.edu.ustb.core.graph.JobGraph;
+import cn.edu.ustb.core.graph.JobGraphBuilder;
 import cn.edu.ustb.service.dataset.Dataset;
 import cn.edu.ustb.service.transformation.Transformation;
 import lombok.AllArgsConstructor;

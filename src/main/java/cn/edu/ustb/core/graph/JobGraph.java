@@ -1,4 +1,4 @@
-package cn.edu.ustb.core.dag;
+package cn.edu.ustb.core.graph;
 
 import cn.edu.ustb.core.task.Task;
 import cn.edu.ustb.core.task.scheduler.DefaultTaskScheduler;
